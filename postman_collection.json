@@ -1,0 +1,122 @@
+{
+	"info": {
+		"_postman_id": "5e998e70-7cee-43e7-8296-3294fe6c175c",
+		"name": "sls-course",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Create auction",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"title\": \"super nice car\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{root_path}}/auctions",
+					"host": [
+						"{{root_path}}"
+					],
+					"path": [
+						"auctions"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get auctions",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{root_path}}/auctions",
+					"host": [
+						"{{root_path}}"
+					],
+					"path": [
+						"auctions"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get auction by id",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{root_path}}/auctions/483aa546-6777-4ea8-80fa-2b2699101ec9",
+					"host": [
+						"{{root_path}}"
+					],
+					"path": [
+						"auctions",
+						"483aa546-6777-4ea8-80fa-2b2699101ec9"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Place bid",
+			"request": {
+				"method": "PATCH",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"amount\": 10\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{root_path}}/auctions/483aa546-6777-4ea8-80fa-2b2699101ec9/bid",
+					"host": [
+						"{{root_path}}"
+					],
+					"path": [
+						"auctions",
+						"483aa546-6777-4ea8-80fa-2b2699101ec9",
+						"bid"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
