@@ -1,0 +1,85 @@
+service: auction-service
+
+frameworkVersion: ^3.12.0
+
+plugins:
+  - serverless-plugin-typescript
+  - serverless-dynamodb-local
+  - serverless-cloudside-plugin
+  - serverless-offline
+
+provider:
+  name: aws
+  runtime: nodejs14.x
+  memorySize: 256
+  stage: ${opt:stage, 'dev'}
+  environment:
+    AUCTIONS_TABLE_NAME: ${self:custom.AuctionsTable.name}
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:PutItem
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:UpdateItem
+      Resource:
+        - ${self:custom.AuctionsTable.arn}
+
+resources:
+  Resources:
+    AuctionsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: AuctionsTable-${self:provider.stage}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+
+functions:
+  createAuction:
+    events:
+      - http:
+          method: POST
+          path: /auctions
+    handler: src/handlers/auctions/POST.handler
+
+  getAuctions:
+    events:
+      - http:
+          method: GET
+          path: /auctions
+    handler: src/handlers/auctions/GET.handler
+
+  getAuction:
+    events:
+      - http:
+          method: GET
+          path: /auctions/{id}
+    handler: src/handlers/auctions/[id]/GET.handler
+
+  placeBid:
+    events:
+      - http:
+          method: PATCH
+          path: /auctions/{id}/bid
+    handler: src/handlers/auctions/[id]/bid/PATCH.handler
+
+custom:
+  AuctionsTable:
+    name: !Ref AuctionsTable
+    arn: !GetAtt AuctionsTable.Arn
+  dynamodb:
+    stages:
+      - ${self:provider.stage}
+    start:
+      port: 8000
+      inMemory: true
+      migrate: true
+  serverless-offline:
+    httpPort: 4000
+    lambdaPort: 4002
+    printOutput: true
