@@ -13,6 +13,14 @@ The goal of this repo is:
 
 # How to?
 
+## Prepare
+
+```bash
+npm install -g serverless
+
+npm install
+```
+
 ## Run locally
 
 ```bash
@@ -25,7 +33,17 @@ sls offline cloudside
 
 ## View data locally
 
-install and use `dynamodb-admin`.
+install and use `dynamodb-admin`:
+
+```bash
+npm install -g dynamodb-admin
+
+dynamodb-admin
+```
+
+## API Access
+
+Import postman collection: `postman_collection.json` and setup environment vars (e.g., `root_path: http://localhost:4000/dev`)
 
 ## Troubleshooting
 
