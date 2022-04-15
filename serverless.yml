@@ -23,12 +23,36 @@ provider:
         - dynamodb:Scan
         - dynamodb:GetItem
         - dynamodb:UpdateItem
+        - dynamodb:Query
       Resource:
         - ${self:custom.AuctionsTable.arn}
         - !Join ["/", ["${self:custom.AuctionsTable.arn}", "index", "statusAndEndDate"]]
 
 resources:
   Resources:
+    # ref: https://serverless-stack.com/chapters/configure-cognito-user-pool-in-serverless.html
+    CognitoUserPool:
+      Type: AWS::Cognito::UserPool
+      Properties:
+        # Generate a name based on the stage
+        UserPoolName: ${self:provider.stage}-user-pool
+        # Set email as an alias
+        UsernameAttributes:
+          - email
+        AutoVerifiedAttributes:
+          - email
+
+    CognitoUserPoolClient:
+      Type: AWS::Cognito::UserPoolClient
+      Properties:
+        # Generate an app client name based on the stage
+        ClientName: ${self:provider.stage}-user-pool-client
+        UserPoolId:
+          Ref: CognitoUserPool
+        ExplicitAuthFlows:
+          - ADMIN_NO_SRP_AUTH
+        GenerateSecret: false
+
     AuctionsTable:
       Type: AWS::DynamoDB::Table
       Properties:
@@ -53,6 +77,16 @@ resources:
                 KeyType: RANGE
             Projection:
               ProjectionType: ALL
+
+  # Print out the Id of the User Pool that is created
+  Outputs:
+    UserPoolId:
+      Value:
+        Ref: CognitoUserPool
+
+    UserPoolClientId:
+      Value:
+        Ref: CognitoUserPoolClient
 
 functions:
   createAuction:

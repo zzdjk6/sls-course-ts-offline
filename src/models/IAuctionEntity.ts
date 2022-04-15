@@ -7,4 +7,5 @@ export type IAuctionEntity = {
   highestBid: {
     amount: number;
   };
+  seller: string;
 };

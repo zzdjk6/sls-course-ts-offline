@@ -8,8 +8,10 @@ The goal of this repo is:
 
 - upgrade to the latest framework version
 - use TypeScript
-- work locally
+- work in both offline and cloud
 - demonstrate an organised project structure
+- experiment with Cognito authentication
+- experiment with input validation tools
 
 # How to?
 
@@ -56,3 +58,51 @@ lsof -i tcp:8000
 # kill it
 kill -9 xxxx
 ```
+
+## Notes
+
+### Authentication
+
+There are several options:
+
+1. create a separate lambda as authorizer
+2. create middleware
+3. create service code
+
+Option#1 requires the authorizer lambda to return a very complex result (e.g., aws policy), also it is another lambda call;
+Option#2 requires modify the `event` object to carry more non-standard attributes to read authentication info;
+Option#3 is preferred as it is simple to call and get the result without extra overhead.
+
+Note: to work with this cognito setup, we need to manually set up some users using AWS Console and CLI.
+
+```bash
+# Confirm user password
+aws cognito-idp admin-set-user-password \
+    --user-pool-id <cognito_user_pool_id> \
+    --username <user_name> \
+    --password <password> \
+    --permanent
+  
+aws cognito-idp admin-initiate-auth \
+    --user-pool-id <cognito_user_pool_id> \
+    --client-id <cognito_user_client_id> \
+    --auth-flow ADMIN_NO_SRP_AUTH \
+    --auth-parameters USERNAME=<user_name>,PASSWORD=<password>
+  
+```
+
+### Input validation
+
+Options:
+
+1. JSON Schema
+2. yup / zod / joi
+
+Option#1:
+* pros: not bound to specific language, i.e., can use same JSON schema in another language such as Java or Python
+* cons: requires a very tedious coding format to do very simple stuff
+
+Option#2:
+* pros: productive, i.e., easy to read & write
+* cons: library locked-in
+

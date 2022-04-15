@@ -9,11 +9,11 @@ export class AuctionService {
   private dynamodbClient: DocumentClient;
 
   constructor() {
-    this.tableName = AuctionService.getAuctionsTableName();
+    this.tableName = process.env.AUCTIONS_TABLE_NAME || "Auctions-offline";
     this.dynamodbClient = DynamodbClientProvider.getDocumentClient();
   }
 
-  async createAuction(payload: { title: string }) {
+  async createAuction(payload: { title: string; seller: string }) {
     const now = new Date();
     const endDate = new Date();
     endDate.setHours(now.getHours() + 1);
@@ -27,6 +27,7 @@ export class AuctionService {
       highestBid: {
         amount: 0,
       },
+      seller: payload.seller,
     };
 
     try {
@@ -125,13 +126,5 @@ export class AuctionService {
       console.error(error);
       throw new createHttpError.BadRequest(error);
     }
-  }
-
-  private static getAuctionsTableName(): string {
-    if (process.env.AUCTIONS_TABLE_NAME) {
-      return process.env.AUCTIONS_TABLE_NAME;
-    }
-
-    return "auctions-offline";
   }
 }

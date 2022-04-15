@@ -1,20 +1,46 @@
 import "source-map-support/register";
-import {
-  APIGatewayProxyEvent,
-  APIGatewayProxyResult,
-  Handler,
-} from "aws-lambda";
+import { APIGatewayProxyHandler } from "aws-lambda";
 import { withDefaultMiddlewares } from "../middlewares/withDefaultMiddlewares";
 import { AuctionService } from "../services/AuctionService";
+import { AuthService } from "../services/AuthService";
+import createHttpError from "http-errors";
+import Ajv, { JSONSchemaType } from "ajv";
 
-const createAuction: Handler<
-  APIGatewayProxyEvent,
-  APIGatewayProxyResult
-> = async (event, context) => {
-  // TODO: schema validation
-  const { title } = event.body as any;
+// Note:
+//  1. This is to demo using ajv to validate directly
+//  2. JSON Schema is too verbose
+const inputSchema: JSONSchemaType<{
+  title: string;
+}> = {
+  type: "object",
+  properties: {
+    title: {
+      type: "string",
+    },
+  },
+  required: ["title"],
+  additionalProperties: false,
+};
 
-  const auction = await new AuctionService().createAuction({ title });
+const validateInputSchema = new Ajv().compile(inputSchema);
+
+const createAuction: APIGatewayProxyHandler = async (event, context) => {
+  // Check authentication
+  const user = await new AuthService().getCallerIdentity(event.headers);
+  if (!user) {
+    throw new createHttpError.Unauthorized();
+  }
+
+  // Check request payload
+  if (!validateInputSchema(event.body)) {
+    throw new createHttpError.BadRequest();
+  }
+
+  const { title } = event.body;
+  const auction = await new AuctionService().createAuction({
+    title,
+    seller: user.email,
+  });
 
   return {
     statusCode: 201,

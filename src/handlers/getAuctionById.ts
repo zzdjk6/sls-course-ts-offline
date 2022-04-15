@@ -1,18 +1,24 @@
 import "source-map-support/register";
 import { withDefaultMiddlewares } from "../middlewares/withDefaultMiddlewares";
-import {
-  APIGatewayProxyEvent,
-  APIGatewayProxyResult,
-  Handler,
-} from "aws-lambda";
+import { APIGatewayProxyHandler } from "aws-lambda";
 import { AuctionService } from "../services/AuctionService";
+import { AuthService } from "../services/AuthService";
+import createHttpError from "http-errors";
+import * as yup from "yup";
 
-const getAuctionById: Handler<
-  APIGatewayProxyEvent,
-  APIGatewayProxyResult
-> = async (event, context) => {
-  // TODO: schema validation
-  const { id } = event.pathParameters as any;
+// Note: this is to demo validating using yup
+const pathParametersSchema = yup.object({
+  id: yup.string().required(),
+});
+
+const getAuctionById: APIGatewayProxyHandler = async (event, context) => {
+  // Check authentication
+  const user = await new AuthService().getCallerIdentity(event.headers);
+  if (!user) {
+    throw new createHttpError.Unauthorized();
+  }
+
+  const { id } = await pathParametersSchema.validate(event.pathParameters);
   const auction = await new AuctionService().getAuctionById(id);
 
   return {
