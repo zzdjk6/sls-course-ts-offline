@@ -1,8 +1,10 @@
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { DynamodbClientProvider } from "./DynamodbClientProvider";
-import { IAuctionEntity } from "../models/IAuctionEntity";
-import { v4 as uuid } from "uuid";
-import createHttpError from "http-errors";
+import { IAuctionEntity, IAuctionStatus, IBidEntity } from "../models/IAuctionEntity";
+import get from "lodash/get";
+import toString from "lodash/toString";
+import { toNumber } from "lodash";
+import { ulid } from "ulid";
 
 export class AuctionService {
   private readonly tableName: string;
@@ -14,117 +16,121 @@ export class AuctionService {
   }
 
   async createAuction(payload: { title: string; seller: string }) {
+    const { title, seller } = payload;
     const now = new Date();
     const endDate = new Date();
     endDate.setHours(now.getHours() + 1);
 
     const auction: IAuctionEntity = {
-      id: uuid(),
-      title: payload.title,
+      id: `AUCTION::${seller}::${ulid()}`,
+      title,
       status: "OPEN",
       createdAt: now.toISOString(),
       endingAt: endDate.toISOString(),
       highestBid: {
         amount: 0,
+        bidder: "",
       },
-      seller: payload.seller,
+      seller,
     };
 
-    try {
-      await this.dynamodbClient
-        .put({
-          TableName: this.tableName,
-          Item: auction,
-        })
-        .promise();
-    } catch (error) {
-      console.error(error);
-      throw new createHttpError.BadRequest(error);
-    }
+    await this.dynamodbClient
+      .put({
+        TableName: this.tableName,
+        Item: auction,
+      })
+      .promise();
+
     return auction;
   }
 
   async getAllAuctions(params: { status: string }): Promise<IAuctionEntity[]> {
-    try {
-      const result = await this.dynamodbClient
-        .query({
-          TableName: this.tableName,
-          IndexName: "statusAndEndDate",
-          KeyConditionExpression: "#status = :status",
-          ExpressionAttributeValues: {
-            ":status": params.status,
-          },
-          ExpressionAttributeNames: {
-            "#status": "status",
-          },
-        })
-        .promise();
+    const result = await this.dynamodbClient
+      .query({
+        TableName: this.tableName,
+        IndexName: "statusAndEndDate",
+        KeyConditionExpression: "#status = :status",
+        ExpressionAttributeValues: {
+          ":status": params.status,
+        },
+        ExpressionAttributeNames: {
+          "#status": "status",
+        },
+      })
+      .promise();
 
-      // TODO: needs parsing and transformation
-      return result.Items as IAuctionEntity[];
-    } catch (error) {
-      console.error(error);
-      throw new createHttpError.BadRequest(error);
-    }
+    const auctions = result.Items?.map((item) => this.parseAuctionEntity(item)) || [];
+    return auctions;
   }
 
-  async getAuctionById(id: string): Promise<IAuctionEntity> {
-    let auction: IAuctionEntity;
+  async getAuctionById(id: string): Promise<IAuctionEntity | null> {
+    const result = await this.dynamodbClient
+      .get({
+        TableName: this.tableName,
+        Key: { id },
+      })
+      .promise();
 
-    try {
-      const result = await this.dynamodbClient
-        .get({
-          TableName: this.tableName,
-          Key: { id },
-        })
-        .promise();
-
-      // TODO: needs parsing and transformation
-      auction = result.Item as IAuctionEntity;
-    } catch (error) {
-      console.error(error);
-      throw new createHttpError.BadRequest(error);
+    if (!result.Item) {
+      return null;
     }
 
-    if (!auction) {
-      throw new createHttpError.NotFound(`Auction with ID "${id}" not found!`);
-    }
-
-    return auction;
+    return this.parseAuctionEntity(result.Item);
   }
 
-  async placeBidOnAuction(payload: {
-    id: string;
-    amount: number;
-  }): Promise<IAuctionEntity> {
-    const { id, amount } = payload;
+  async placeBidOnAuction(payload: { id: string; amount: number; bidder: string }): Promise<IAuctionEntity | null> {
+    const { id, amount, bidder } = payload;
 
     const auction = await this.getAuctionById(id);
+    if (!auction) {
+      return null;
+    }
 
     if (amount <= auction.highestBid.amount) {
-      throw new createHttpError.Forbidden(
-        `Your bid must be higher than ${auction.highestBid.amount}!`
-      );
+      throw new Error(`Your bid must be higher than ${auction.highestBid.amount}!`);
     }
 
     const params: DocumentClient.UpdateItemInput = {
       TableName: this.tableName,
       Key: { id },
-      UpdateExpression: "set highestBid.amount = :amount",
+      UpdateExpression: "SET highestBid = :highestBid",
       ExpressionAttributeValues: {
-        ":amount": amount,
+        ":highestBid": {
+          amount,
+          bidder,
+        },
       },
       ReturnValues: "ALL_NEW",
     };
 
-    try {
-      const result = await this.dynamodbClient.update(params).promise();
+    const result = await this.dynamodbClient.update(params).promise();
+    return this.parseAuctionEntity(result.Attributes);
+  }
 
-      // TODO: needs parsing and transformation
-      return result.Attributes as IAuctionEntity;
-    } catch (error) {
-      console.error(error);
-      throw new createHttpError.BadRequest(error);
+  private parseAuctionEntity(json: any): IAuctionEntity {
+    return {
+      id: toString(get(json, "id")),
+      title: toString(get(json, "title")),
+      status: this.parseAuctionStatus(toString(get(json, "status"))),
+      createdAt: toString(get(json, "createdAt")),
+      endingAt: toString(get(json, "endingAt")),
+      highestBid: this.parseBid(get(json, "highestBid")),
+      seller: toString(get(json, "seller")),
+    };
+  }
+
+  private parseAuctionStatus(str: string): IAuctionStatus {
+    if (str.toUpperCase() === "OPEN") {
+      return "OPEN";
     }
+
+    return "CLOSED";
+  }
+
+  private parseBid(json: any): IBidEntity {
+    return {
+      amount: toNumber(get(json, "amount")),
+      bidder: toString(get(json, "bidder")),
+    };
   }
 }

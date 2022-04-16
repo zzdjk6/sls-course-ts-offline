@@ -21,6 +21,10 @@ const getAuctionById: APIGatewayProxyHandler = async (event, context) => {
   const { id } = await pathParametersSchema.validate(event.pathParameters);
   const auction = await new AuctionService().getAuctionById(id);
 
+  if (!auction) {
+    throw new createHttpError.NotFound(`Auction with ID "${id}" not found!`);
+  }
+
   return {
     statusCode: 200,
     body: JSON.stringify(auction),

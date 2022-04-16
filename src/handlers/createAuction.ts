@@ -5,6 +5,7 @@ import { AuctionService } from "../services/AuctionService";
 import { AuthService } from "../services/AuthService";
 import createHttpError from "http-errors";
 import Ajv, { JSONSchemaType } from "ajv";
+import { NotificationService } from "../services/NotificationService";
 
 // Note:
 //  1. This is to demo using ajv to validate directly
@@ -40,6 +41,13 @@ const createAuction: APIGatewayProxyHandler = async (event, context) => {
   const auction = await new AuctionService().createAuction({
     title,
     seller: user.email,
+  });
+
+  // Notify the seller
+  await new NotificationService().putMessageInQueue({
+    subject: `[Seller] Auction has been created: ${auction.id}`,
+    recipient: auction.seller,
+    body: [`Auction ID: ${auction.id}`, `Auction Title: ${auction.title}`].join("\n"),
   });
 
   return {

@@ -1,11 +1,16 @@
 export type IAuctionEntity = {
   id: string;
   title: string;
-  status: "OPEN" | "CLOSED";
+  status: IAuctionStatus;
   createdAt: string;
   endingAt: string;
-  highestBid: {
-    amount: number;
-  };
+  highestBid: IBidEntity;
   seller: string;
+};
+
+export type IAuctionStatus = "OPEN" | "CLOSED";
+
+export type IBidEntity = {
+  amount: number;
+  bidder: string;
 };

@@ -15,7 +15,8 @@ provider:
   memorySize: 256
   stage: ${opt:stage, 'dev'}
   environment:
-    AUCTIONS_TABLE_NAME: ${self:custom.AuctionsTable.name}
+    AUCTIONS_TABLE_NAME: ${self:custom.auctions-table.name}
+    MAIL_QUEUE_URL: ${self:custom.mail-queue.url}
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -25,8 +26,17 @@ provider:
         - dynamodb:UpdateItem
         - dynamodb:Query
       Resource:
-        - ${self:custom.AuctionsTable.arn}
-        - !Join ["/", ["${self:custom.AuctionsTable.arn}", "index", "statusAndEndDate"]]
+        - ${self:custom.auctions-table.arn}
+        - !Join ["/", ["${self:custom.auctions-table.arn}", "index", "statusAndEndDate"]]
+    - Effect: Allow
+      Action:
+        - sqs:SendMessage
+      Resource: ${self:custom.mail-queue.arn}
+    - Effect: Allow
+      Action:
+        - ses:SendEmail
+      Resource:
+        - arn:aws:ses:*
 
 resources:
   Resources:
@@ -52,6 +62,11 @@ resources:
         ExplicitAuthFlows:
           - ADMIN_NO_SRP_AUTH
         GenerateSecret: false
+
+    MailQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: ${self:custom.mail-queue.name}
 
     AuctionsTable:
       Type: AWS::DynamoDB::Table
@@ -80,13 +95,23 @@ resources:
 
   # Print out the Id of the User Pool that is created
   Outputs:
+    # Cognito
     UserPoolId:
       Value:
         Ref: CognitoUserPool
-
     UserPoolClientId:
       Value:
         Ref: CognitoUserPoolClient
+
+    # MailQueue
+    MailQueueArn:
+      Value: ${self:custom.mail-queue.arn}
+      Export:
+        Name: ${self:custom.mail-queue.name}-Arn
+    MailQueueUrl:
+      Value: ${self:custom.mail-queue.url}
+      Export:
+        Name: ${self:custom.mail-queue.name}-Url
 
 functions:
   createAuction:
@@ -117,8 +142,15 @@ functions:
           method: PATCH
           path: /auctions/{id}/bid
 
+  sendMail:
+    handler: src/handlers/sendMail.handler
+    events:
+      - sqs:
+          arn: ${self:custom.mail-queue.arn}
+          batchSize: 1
+
 custom:
-  AuctionsTable:
+  auctions-table:
     name: !Ref AuctionsTable
     arn: !GetAtt AuctionsTable.Arn
   dynamodb:
@@ -132,3 +164,7 @@ custom:
     httpPort: 4000
     lambdaPort: 4002
     printOutput: true
+  mail-queue:
+    name: MailQueue-${self:provider.stage}
+    arn: !GetAtt MailQueue.Arn
+    url: !Ref MailQueue
