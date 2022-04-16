@@ -12,6 +12,11 @@ The goal of this repo is:
 - demonstrate an organised project structure
 - experiment with Cognito authentication
 - experiment with input validation tools
+- experiment with SQS vs. DynamoDB Stream
+
+# Learning resources
+
+- [Amazon DynamoDB session videos from AWS re:Invent 2021](https://aws.amazon.com/blogs/database/amazon-dynamodb-session-videos-from-aws-reinvent-2021/)
 
 # How to?
 
@@ -106,3 +111,16 @@ Option#2:
 * pros: productive, i.e., easy to read & write
 * cons: library locked-in
 
+### Notification
+
+We explore 2 options to trigger notification:
+1. API Gateway -> Lambda -> SQS -> Lambda -> SES
+2. DynamoDB Stream -> Lambda -> SES
+
+## TODO
+
+- [ ] Experiment demo for DynamoDB Stream
+- [ ] Run Lambda for scheduled tasks
+- [ ] Dead letter queue for fail message deliver
+- [ ] Update the schema to fit single-table design (e.g., PK,SK, GSIPK, GSISK)
+- [ ] List the access pattern
