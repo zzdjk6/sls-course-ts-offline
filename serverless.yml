@@ -27,7 +27,7 @@ provider:
         - dynamodb:Query
       Resource:
         - ${self:custom.auctions-table.arn}
-        - !Join ["/", ["${self:custom.auctions-table.arn}", "index", "statusAndEndDate"]]
+        - !Join ["/", ["${self:custom.auctions-table.arn}", "index", "*"]]
     - Effect: Allow
       Action:
         - sqs:SendMessage
@@ -74,21 +74,25 @@ resources:
         TableName: AuctionsTable-${self:provider.stage}
         BillingMode: PAY_PER_REQUEST
         AttributeDefinitions:
-          - AttributeName: id
+          - AttributeName: PK
             AttributeType: S
-          - AttributeName: status
+          - AttributeName: SK
             AttributeType: S
-          - AttributeName: endingAt
+          - AttributeName: GSI1PK
+            AttributeType: S
+          - AttributeName: GSI1SK
             AttributeType: S
         KeySchema:
-          - AttributeName: id
+          - AttributeName: PK
             KeyType: HASH
+          - AttributeName: SK
+            KeyType: RANGE
         GlobalSecondaryIndexes:
-          - IndexName: statusAndEndDate
+          - IndexName: GSI1
             KeySchema:
-              - AttributeName: status
+              - AttributeName: GSI1PK
                 KeyType: HASH
-              - AttributeName: endingAt
+              - AttributeName: GSI1SK
                 KeyType: RANGE
             Projection:
               ProjectionType: ALL

@@ -6,6 +6,7 @@
   "license": "MIT",
   "scripts": {
     "offline": "serverless offline cloudside",
+    "remove": "serverless remove --verbose",
     "deploy": "serverless deploy --verbose",
     "deploy:function": "serverless deploy function --verbose --function"
   },

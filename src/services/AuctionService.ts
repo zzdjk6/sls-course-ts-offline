@@ -6,6 +6,10 @@ import toString from "lodash/toString";
 import { toNumber } from "lodash";
 import { ulid } from "ulid";
 
+/**
+ * Service class to perform business logic about Auction
+ * Note: all methods can throw
+ */
 export class AuctionService {
   private readonly tableName: string;
   private dynamodbClient: DocumentClient;
@@ -21,8 +25,14 @@ export class AuctionService {
     const endDate = new Date();
     endDate.setHours(now.getHours() + 1);
 
+    const id = ulid();
+
     const auction: IAuctionEntity = {
-      id: `AUCTION::${seller}::${ulid()}`,
+      PK: this.generateAuctionPK(id),
+      SK: endDate.toISOString(),
+      GSI1PK: "OPEN",
+      GSI1SK: endDate.toISOString(),
+      id,
       title,
       status: "OPEN",
       createdAt: now.toISOString(),
@@ -32,6 +42,7 @@ export class AuctionService {
         bidder: "",
       },
       seller,
+      version: "2022-04-17",
     };
 
     await this.dynamodbClient
@@ -48,14 +59,12 @@ export class AuctionService {
     const result = await this.dynamodbClient
       .query({
         TableName: this.tableName,
-        IndexName: "statusAndEndDate",
-        KeyConditionExpression: "#status = :status",
+        IndexName: "GSI1",
+        KeyConditionExpression: "GSI1PK = :GSI1PK",
         ExpressionAttributeValues: {
-          ":status": params.status,
+          ":GSI1PK": params.status,
         },
-        ExpressionAttributeNames: {
-          "#status": "status",
-        },
+        ScanIndexForward: false, // DESC
       })
       .promise();
 
@@ -64,18 +73,25 @@ export class AuctionService {
   }
 
   async getAuctionById(id: string): Promise<IAuctionEntity | null> {
+    const PK = this.generateAuctionPK(id);
+    console.log("PK: ", PK);
+
     const result = await this.dynamodbClient
-      .get({
+      .query({
         TableName: this.tableName,
-        Key: { id },
+        KeyConditionExpression: "PK = :PK",
+        ExpressionAttributeValues: {
+          ":PK": PK,
+        },
+        Limit: 1,
       })
       .promise();
 
-    if (!result.Item) {
+    if (!result.Items || result.Items.length === 0) {
       return null;
     }
 
-    return this.parseAuctionEntity(result.Item);
+    return this.parseAuctionEntity(result.Items[0]);
   }
 
   async placeBidOnAuction(payload: { id: string; amount: number; bidder: string }): Promise<IAuctionEntity | null> {
@@ -92,7 +108,10 @@ export class AuctionService {
 
     const params: DocumentClient.UpdateItemInput = {
       TableName: this.tableName,
-      Key: { id },
+      Key: {
+        PK: this.generateAuctionPK(id),
+        SK: auction.endingAt,
+      },
       UpdateExpression: "SET highestBid = :highestBid",
       ExpressionAttributeValues: {
         ":highestBid": {
@@ -109,6 +128,10 @@ export class AuctionService {
 
   private parseAuctionEntity(json: any): IAuctionEntity {
     return {
+      PK: toString(get(json, "PK")),
+      SK: toString(get(json, "SK")),
+      GSI1PK: toString(get(json, "GSI1PK")),
+      GSI1SK: toString(get(json, "GSI1SK")),
       id: toString(get(json, "id")),
       title: toString(get(json, "title")),
       status: this.parseAuctionStatus(toString(get(json, "status"))),
@@ -116,6 +139,7 @@ export class AuctionService {
       endingAt: toString(get(json, "endingAt")),
       highestBid: this.parseBid(get(json, "highestBid")),
       seller: toString(get(json, "seller")),
+      version: toString(get(json, "version")),
     };
   }
 
@@ -132,5 +156,13 @@ export class AuctionService {
       amount: toNumber(get(json, "amount")),
       bidder: toString(get(json, "bidder")),
     };
+  }
+
+  private generateAuctionPK(id: string): string {
+    if (id.startsWith("AUCTION::")) {
+      return id;
+    }
+
+    return `AUCTION::${id}`;
   }
 }

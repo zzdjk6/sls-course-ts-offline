@@ -4,12 +4,12 @@ import httpEventNormalizer from "@middy/http-event-normalizer";
 import httpErrorHandler from "@middy/http-error-handler";
 import { Handler } from "aws-lambda";
 
-export const withDefaultMiddlewares = (
-  handler: Handler
-): middy.MiddyfiedHandler => {
+export const withDefaultMiddlewares = (handler: Handler): middy.MiddyfiedHandler => {
   return middy(handler).use([
     httpJsonBodyParser(),
     httpEventNormalizer(),
-    httpErrorHandler(),
+    httpErrorHandler({
+      fallbackMessage: "Server Error",
+    }),
   ]);
 };

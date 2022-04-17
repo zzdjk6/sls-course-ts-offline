@@ -13,10 +13,13 @@ The goal of this repo is:
 - experiment with Cognito authentication
 - experiment with input validation tools
 - experiment with SQS vs. DynamoDB Stream
+- experiment with single-table design
 
 # Learning resources
 
 - [Amazon DynamoDB session videos from AWS re:Invent 2021](https://aws.amazon.com/blogs/database/amazon-dynamodb-session-videos-from-aws-reinvent-2021/)
+- [Alex DeBrie's blog](https://www.alexdebrie.com/)
+- [Working with Queries in DynamoDB](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.html#Query.KeyConditionExpressions)
 
 # How to?
 
@@ -63,6 +66,8 @@ lsof -i tcp:8000
 # kill it
 kill -9 xxxx
 ```
+
+if `Error: EPERM: operation not permitted, unlink ...`, then `rm -rf ./.build`
 
 ## Notes
 
@@ -117,10 +122,39 @@ We explore 2 options to trigger notification:
 1. API Gateway -> Lambda -> SQS -> Lambda -> SES
 2. DynamoDB Stream -> Lambda -> SES
 
+### Data access pattern
+
+- Create auction
+- Get auctions
+  - by status, ordered by end date desc
+- Get auction
+  - by id
+- Update auction
+  - by id, update the highest bid info
+- Update auctions
+  - by ending date and status: close expired auction
+
+### Key divider symbol
+
+In many examples, we see keys or attributes are using `#` or `_` as divider, but there are some issues:
+
+- `#`: if we expect the entire value to be used in url, then `#` needs to be encoded when sending request and decoded when receiving request, because `#` has special meaning in url;
+- `_`: there might be conflicts when stored value can also have `_`;
+
+So in this example, I use `::`.
+
+However, as long as we use a separate `id` attribute in request instead of passing `PK`, we can either construct `PK` for query or build a GSI for `id`.
+
+### Query key conditions
+
+We can not use functions with Partition Key (HASH key), if we try to do so, we will receive a `ValidationException: Query key condition not supported`.
+
+> You must specify the partition key name and value as an equality condition
+> -- from: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.html#Query.KeyConditionExpressions
+
 ## TODO
 
 - [ ] Experiment demo for DynamoDB Stream
 - [ ] Run Lambda for scheduled tasks
 - [ ] Dead letter queue for fail message deliver
 - [ ] Update the schema to fit single-table design (e.g., PK,SK, GSIPK, GSISK)
-- [ ] List the access pattern
