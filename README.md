@@ -15,6 +15,12 @@ The goal of this repo is:
 - experiment with SQS vs. DynamoDB Stream
 - experiment with single-table design
 
+## TODO
+
+- [ ] Experiment demo for DynamoDB Stream
+- [ ] Dead letter queue for fail message deliver
+- [ ] Run Lambda for scheduled tasks
+
 # Learning resources
 
 - [Amazon DynamoDB session videos from AWS re:Invent 2021](https://aws.amazon.com/blogs/database/amazon-dynamodb-session-videos-from-aws-reinvent-2021/)
@@ -151,10 +157,3 @@ We can not use functions with Partition Key (HASH key), if we try to do so, we w
 
 > You must specify the partition key name and value as an equality condition
 > -- from: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.html#Query.KeyConditionExpressions
-
-## TODO
-
-- [ ] Experiment demo for DynamoDB Stream
-- [ ] Run Lambda for scheduled tasks
-- [ ] Dead letter queue for fail message deliver
-- [ ] Update the schema to fit single-table design (e.g., PK,SK, GSIPK, GSISK)
