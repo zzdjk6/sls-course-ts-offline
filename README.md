@@ -18,7 +18,8 @@ The goal of this repo is:
 ## TODO
 
 - [ ] Experiment on DynamoDB Stream (vs. SQS)
-- [ ] Experiment on Authorizer Lambda for API Gateway + Cognito (vs. inline code call in each lambda)
+https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Streams.Lambda.Tutorial.html
+- [ ] Experiment on Authorizer Lambda for API Gateway + Cognito (vs. inline code call in each lambda) https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-use-lambda-authorizer.html
 - [ ] Dead letter queue for fail message deliver
 - [ ] Run Lambda for scheduled tasks
 
