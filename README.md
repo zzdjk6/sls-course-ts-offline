@@ -12,12 +12,13 @@ The goal of this repo is:
 - demonstrate an organised project structure
 - experiment with Cognito authentication
 - experiment with input validation tools
-- experiment with SQS vs. DynamoDB Stream
+- experiment with SQS
 - experiment with single-table design
 
 ## TODO
 
-- [ ] Experiment demo for DynamoDB Stream
+- [ ] Experiment on DynamoDB Stream (vs. SQS)
+- [ ] Experiment on Authorizer Lambda for API Gateway + Cognito (vs. inline code call in each lambda)
 - [ ] Dead letter queue for fail message deliver
 - [ ] Run Lambda for scheduled tasks
 
@@ -85,9 +86,11 @@ There are several options:
 2. create middleware
 3. create service code
 
-Option#1 requires the authorizer lambda to return a very complex result (e.g., aws policy), also it is another lambda call;
-Option#2 requires modify the `event` object to carry more non-standard attributes to read authentication info;
-Option#3 is preferred as it is simple to call and get the result without extra overhead.
+There are pros & cons so we need more experiments and insights:
+
+* Option#1 requires the authorizer lambda to return a very complex result (e.g., aws policy), also it is another lambda call;
+* Option#2 requires modify the `event` object to carry more non-standard attributes to read authentication info;
+* Option#3 requires to make the function call in each lambda to verify the auth token
 
 Note: to work with this cognito setup, we need to manually set up some users using AWS Console and CLI.
 
