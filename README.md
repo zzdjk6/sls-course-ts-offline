@@ -22,6 +22,7 @@ The goal of this repo is:
 - [ ] Experiment on Authorizer Lambda for API Gateway + Cognito (vs. inline code call in each lambda)
   - https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-use-lambda-authorizer.html
   - https://github.com/aws-samples/aws-cdk-examples/blob/e25494ab4f1766a492153e5a40a9216cd1e096a1/typescript/cognito-api-lambda/index.ts#L31-L39
+  - https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-enable-cognito-user-pool.html
 - [ ] Dead letter queue for fail message deliver
 - [ ] Run Lambda for scheduled tasks
 
