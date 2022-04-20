@@ -23,6 +23,7 @@ The goal of this repo is:
   - https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-use-lambda-authorizer.html
   - https://github.com/aws-samples/aws-cdk-examples/blob/e25494ab4f1766a492153e5a40a9216cd1e096a1/typescript/cognito-api-lambda/index.ts#L31-L39
   - https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-enable-cognito-user-pool.html
+  - https://www.freecodecamp.org/news/aws-cognito-authentication-with-serverless-and-nodejs/
 - [ ] Dead letter queue for fail message deliver
 - [ ] Run Lambda for scheduled tasks
 
