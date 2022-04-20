@@ -10,7 +10,7 @@ The goal of this repo is:
 - use TypeScript
 - work in both offline and cloud
 - demonstrate an organised project structure
-- experiment with Cognito authentication
+- experiment with Cognito authentication: inline vs. authorizer
 - experiment with input validation tools
 - experiment with SQS
 - experiment with single-table design
@@ -19,11 +19,6 @@ The goal of this repo is:
 
 - [ ] Experiment on DynamoDB Stream (vs. SQS)
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Streams.Lambda.Tutorial.html
-- [ ] Experiment on Authorizer Lambda for API Gateway + Cognito (vs. inline code call in each lambda)
-  - https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-use-lambda-authorizer.html
-  - https://github.com/aws-samples/aws-cdk-examples/blob/e25494ab4f1766a492153e5a40a9216cd1e096a1/typescript/cognito-api-lambda/index.ts#L31-L39
-  - https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-enable-cognito-user-pool.html
-  - https://www.freecodecamp.org/news/aws-cognito-authentication-with-serverless-and-nodejs/
 - [ ] Dead letter queue for fail message deliver
 - [ ] Run Lambda for scheduled tasks
 
@@ -85,19 +80,24 @@ if `Error: EPERM: operation not permitted, unlink ...`, then `rm -rf ./.build`
 
 ### Authentication
 
+- [Lambda Authorizer Concept](https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-use-lambda-authorizer.html)
+- [Authorizer CDK Example](https://github.com/aws-samples/aws-cdk-examples/blob/e25494ab4f1766a492153e5a40a9216cd1e096a1/typescript/cognito-api-lambda/index.ts#L31-L39)
+- [Manual Authorizer Config](https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-enable-cognito-user-pool.html)
+- [Tutorial on FreeCodeCamp](https://www.freecodecamp.org/news/aws-cognito-authentication-with-serverless-and-nodejs/)
+
 There are several options:
 
 1. create a separate lambda as authorizer
 2. create middleware
 3. create service code
 
-There are pros & cons so we need more experiments and insights:
+In this repo, I have included example code for Option#1 and Option#3.
 
-* Option#1 requires the authorizer lambda to return a very complex result (e.g., aws policy), also it is another lambda call;
-* Option#2 requires modify the `event` object to carry more non-standard attributes to read authentication info;
-* Option#3 requires to make the function call in each lambda to verify the auth token
+References:
+- See `createAuction` for inline Cognito service call
+- See `getAuctions` and `placeBid` for Cognito user pool authorizer integration
 
-Note: to work with this cognito setup, we need to manually set up some users using AWS Console and CLI.
+Note#1: to work with this cognito setup, we need to manually set up some users using AWS Console and CLI.
 
 ```bash
 # Confirm user password
@@ -114,6 +114,8 @@ aws cognito-idp admin-initiate-auth \
     --auth-parameters USERNAME=<user_name>,PASSWORD=<password>
   
 ```
+
+Note#2: only `IdentityToken` works, `AccessToken` is not working.
 
 ### Input validation
 
