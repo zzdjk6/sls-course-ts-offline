@@ -131,6 +131,13 @@ functions:
       - http:
           method: GET
           path: /auctions
+          authorizer:
+            name: MyAuthorizer
+            type: COGNITO_USER_POOLS
+            arn:
+              Fn::GetAtt:
+                - CognitoUserPool
+                - Arn
 
   getAuction:
     handler: src/handlers/getAuctionById.handler
@@ -145,6 +152,13 @@ functions:
       - http:
           method: PATCH
           path: /auctions/{id}/bid
+          authorizer:
+            name: MyAuthorizer
+            type: COGNITO_USER_POOLS
+            arn:
+              Fn::GetAtt:
+                - CognitoUserPool
+                - Arn
 
   sendMail:
     handler: src/handlers/sendMail.handler
@@ -154,6 +168,8 @@ functions:
           batchSize: 1
 
 custom:
+  user-pool:
+    arn: !GetAtt CognitoUserPool.Arn
   auctions-table:
     name: !Ref AuctionsTable
     arn: !GetAtt AuctionsTable.Arn

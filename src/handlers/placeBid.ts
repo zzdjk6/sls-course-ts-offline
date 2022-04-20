@@ -3,9 +3,10 @@ import { withDefaultMiddlewares } from "../middlewares/withDefaultMiddlewares";
 import { APIGatewayProxyHandler } from "aws-lambda";
 import { AuctionService } from "../services/AuctionService";
 import * as yup from "yup";
-import { AuthService } from "../services/AuthService";
 import createHttpError from "http-errors";
 import { NotificationService } from "../services/NotificationService";
+import get from "lodash/get";
+import { IAuctionEntity } from "../models/IAuctionEntity";
 
 // Note: this is to demo validating using yup
 const pathParametersSchema = yup.object({
@@ -17,9 +18,9 @@ const bodySchema = yup.object({
 });
 
 const placeBid: APIGatewayProxyHandler = async (event, context) => {
-  // Check authentication
-  const user = await new AuthService().getCallerIdentity(event.headers);
-  if (!user) {
+  // Get user email from authorizer
+  const email = get(event.requestContext.authorizer, "claims.email");
+  if (!email) {
     throw new createHttpError.Unauthorized();
   }
 
@@ -34,11 +35,17 @@ const placeBid: APIGatewayProxyHandler = async (event, context) => {
   }
 
   // Update the record
-  const updatedAuction = await new AuctionService().placeBidOnAuction({
-    id: pathParameters.id,
-    amount: body.amount,
-    bidder: user.email,
-  });
+  let updatedAuction: IAuctionEntity | undefined;
+
+  try {
+    updatedAuction = await new AuctionService().placeBidOnAuction({
+      id: pathParameters.id,
+      amount: body.amount,
+      bidder: email,
+    });
+  } catch (e) {
+    throw new createHttpError.BadRequest(e?.message);
+  }
 
   if (!updatedAuction) {
     throw new createHttpError.BadRequest(`Can't update auction ${pathParameters.id}`);
@@ -58,7 +65,7 @@ const placeBid: APIGatewayProxyHandler = async (event, context) => {
   });
   await notificationService.putMessageInQueue({
     subject: `[Bidder] You have successfully placed a bid for ${updatedAuction.id}`,
-    recipient: user.email,
+    recipient: email,
     body: [
       `Auction ID: ${updatedAuction.id}`,
       `Auction Title: ${updatedAuction.title}`,

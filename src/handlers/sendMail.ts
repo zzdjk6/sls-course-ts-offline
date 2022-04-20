@@ -48,6 +48,9 @@ const sendMail: Handler<SQSEvent> = async (event, context) => {
     },
   };
 
+  console.log("Sending email with payload:\n", JSON.stringify(params, null, 2));
+
+  /* Uncomment following code to send email
   try {
     const result = await new AWS.SES().sendEmail(params).promise();
     console.log(result);
@@ -55,6 +58,7 @@ const sendMail: Handler<SQSEvent> = async (event, context) => {
   } catch (error) {
     console.error(error);
   }
+  */
 };
 
 export const handler = sendMail;

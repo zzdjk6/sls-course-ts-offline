@@ -94,12 +94,12 @@ export class AuctionService {
     return this.parseAuctionEntity(result.Items[0]);
   }
 
-  async placeBidOnAuction(payload: { id: string; amount: number; bidder: string }): Promise<IAuctionEntity | null> {
+  async placeBidOnAuction(payload: { id: string; amount: number; bidder: string }): Promise<IAuctionEntity> {
     const { id, amount, bidder } = payload;
 
     const auction = await this.getAuctionById(id);
     if (!auction) {
-      return null;
+      throw new Error(`Can't find auction ${id}!`);
     }
 
     if (amount <= auction.highestBid.amount) {
