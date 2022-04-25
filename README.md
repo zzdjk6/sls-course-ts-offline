@@ -117,6 +117,14 @@ aws cognito-idp admin-initiate-auth \
 
 Note#2: only `IdentityToken` works, `AccessToken` is not working.
 
+Note#3: the current example in this repo is based on API Gateway V1 (REST API).
+
+For V2 (HTTP API), it is different -- Cognito should be configured as JWT issuer:
+
+- https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-jwt-authorizer.html
+- https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-apigatewayv2-authorizer.html
+- https://www.serverless.com/framework/docs/providers/aws/events/http-api#jwt-authorizers
+
 ### Input validation
 
 Options:
